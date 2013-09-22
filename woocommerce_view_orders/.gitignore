@@ -2,4 +2,4 @@
 *.csv
 *.md
 *.txt
-main.php
+constants.php

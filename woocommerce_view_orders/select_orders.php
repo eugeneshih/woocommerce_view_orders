@@ -64,22 +64,23 @@ class SelectOrders
     // list all students taking a specific class, if $classname is empty, it will return all
     // classes that paid
     // look at the terms and term_relationships tables to determine paid status
-    $res = $this->mysqli->query("SELECT id " .
+    $res = $this->mysqli->query("SELECT DISTINCT id " .
                                 "FROM wp_ue7xmr_posts JOIN wp_ue7xmr_postmeta " .
                                 "ON id = post_id " .
                                 "JOIN wp_ue7xmr_woocommerce_order_items " .
                                 "ON id = order_id " .
+                                "JOIN wp_ue7xmr_woocommerce_order_itemmeta " .
+                                "ON wp_ue7xmr_woocommerce_order_items.order_item_id = " .
+                                "  wp_ue7xmr_woocommerce_order_itemmeta.order_item_id " .
                                 "JOIN wp_ue7xmr_term_relationships " .
                                 "ON id = object_id " .
                                 "JOIN wp_ue7xmr_terms " .
                                 "ON term_id = term_taxonomy_id " .
                                 "WHERE post_type='shop_order' and " .
-                                " order_item_name like '" . $classname . "' and " .
-                                " ((meta_key='_paid_date' and " .
-                                "   meta_value > date('" . $beginDate . "') and " .
-                                "   meta_value < date('" . $endDate   . "') and " .
-                                "   (slug='processing' or slug='completed')) or " .
-                                "  (meta_key='Payment type' and meta_value='echeck'))");
+                                " order_item_name = '" . $classname . "' and " .
+                                " (slug='processing' or slug='completed') and " .
+                                " wp_ue7xmr_woocommerce_order_itemmeta.meta_key='_qty' and " .
+                                " wp_ue7xmr_woocommerce_order_itemmeta.meta_value > 0");
     $shop_order_ids = array();
     $res->data_seek(0);
     while($row = $res->fetch_assoc()) {
