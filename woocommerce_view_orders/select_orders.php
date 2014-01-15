@@ -39,7 +39,7 @@ class SelectOrders
     }
   }
 
-  function getUniqueProducts($beginDate, $endDate, $slug) {
+  function getUniqueProducts($beginDate, $endDate) {
     $res = $this->mysqli->query("SELECT DISTINCT post_title FROM " .
                                 "wp_ue7xmr_posts " .
                                 "JOIN wp_ue7xmr_term_relationships " .
@@ -50,13 +50,13 @@ class SelectOrders
                                 "post_type='product' and " .
                                 "post_date > date(\"" . $beginDate . "\") and " .
                                 "post_date < date(\"" . $endDate   . "\") and " .
-                                "post_title not like \"Test%\" and " .
-                                "slug=\"" . $slug . "\"");
+                                "post_title not like \"Test%\"");
     $products_array = array();
     $res->data_seek(0);
     while($row = $res->fetch_assoc()) {
       $products_array[] = $row['post_title'];
     }  
+    
     return $products_array;
   }
 
@@ -77,6 +77,8 @@ class SelectOrders
                                 "JOIN wp_ue7xmr_terms " .
                                 "ON term_id = term_taxonomy_id " .
                                 "WHERE post_type='shop_order' and " .
+                                "post_date > date(\"" . $beginDate . "\") and " .
+                                "post_date < date(\"" . $endDate   . "\") and " .
                                 " order_item_name = '" . $classname . "' and " .
                                 " (slug='processing' or slug='completed') and " .
                                 " wp_ue7xmr_woocommerce_order_itemmeta.meta_key='_qty' and " .
@@ -108,6 +110,26 @@ class SelectOrders
     
     return $order_dict;
   }
+
+  function getOrderEmails($shop_order_ids) {
+    $shop_order_id_string = implode(",", $shop_order_ids);
+
+    // list all orders
+    $res = $this->mysqli->query("SELECT DISTINCT " .
+                                "wp_ue7xmr_postmeta.meta_value AS meta_value " .
+                                "FROM wp_ue7xmr_posts " .
+                                "JOIN wp_ue7xmr_postmeta " .
+                                "ON wp_ue7xmr_posts.id = wp_ue7xmr_postmeta.post_id " .
+                                "WHERE wp_ue7xmr_posts.id in (" . $shop_order_id_string . ") and " .
+                                "meta_key='_billing_email'");
+    $res->data_seek(0);
+    $emails = array();
+    while($row = $res->fetch_assoc()) {
+      $emails[] = $row['meta_value'];
+    }
+    
+    return $emails;
+  }
 }
 
 function makerow($array_of_strings, $bold=false) {
@@ -125,17 +147,26 @@ function makerow($array_of_strings, $bold=false) {
   return $row;
 }
 
+function generate_emails($order_dict, $class) {
+  $orderIds = array_keys($order_dict);
+  $emails = array();
+  foreach($orderIds as &$key) {
+    $email = $order_dict[$key]["_billing_email"];
+    $emails[] = $email;
+  }
+  return $emails;
+}
+
 function generate_md($order_dict, $class) {
   $fields = array("student_first_name", "student_last_name", "grade", "teacher",
                   "_billing_first_name", "_billing_last_name", "_billing_contactphone", "_billing_email", 
                   "child_from_red");
-
   $fname = implode("_", explode(" ", $class)) . ".md";
   $fh = fopen($fname, "w");
 
   // heading
   fwrite($fh, "## " . $class . " ##\n");
-  fwrite($fh, "<table>");
+  fwrite($fh, "<table>\n");
 
   // write headers
   $headings = array();
@@ -162,6 +193,42 @@ function generate_md($order_dict, $class) {
   fclose($fh);
 }
 
+define("TOTAL_CLASSES", 15);
+function generate_attendance($order_dict, $class) {
+  $fields = array("student_first_name", "student_last_name");
+  for($i = 1; $i <= TOTAL_CLASSES; $i++) {
+    $fields[] = "class " . $i;
+  }
+
+  $fname = implode("_", explode(" ", $class)) . "-attendance.md";
+  $fh = fopen($fname, "w");
+
+  // heading
+  fwrite($fh, "## " . $class . " ##\n");
+  fwrite($fh, "<table>\n");
+
+  // write headers
+  $headings = array();
+  foreach($fields as &$heading) {
+    $headings[] = ucwords(implode(" ", explode("_", $heading)));
+  }
+  fwrite($fh, makerow($headings, true));
+
+  // write students
+  $orderIds = array_keys($order_dict);
+  foreach($orderIds as &$key) {
+    $student_data = array();
+    foreach($fields as &$meta_key) {
+      $data = ucwords(strtolower($order_dict[$key][$meta_key]));
+      $student_data[] = $data;
+    }
+    fwrite($fh, makerow($student_data));
+  }
+  fwrite($fh, "</table>");
+  fclose($fh);
+}
+
+
 function generate_csv($order_dict, $class) {
   $fields = array("student_first_name", "student_last_name", "grade", "teacher",
                   "_billing_first_name", "_billing_last_name", "_billing_contactphone", "_billing_email", 
@@ -177,19 +244,13 @@ function generate_csv($order_dict, $class) {
   // select the order from the selected orders
   $orderIds = array_keys($order_dict);
   foreach($orderIds as &$key) {
-    $meta_keys = array_keys($order_dict[$key]);
     // then go through the keys, printing out only the ones that we care about
-    foreach($meta_keys as &$meta_key) {
-      if(in_array($meta_key, $fields)) {
-        //fwrite($fh, $meta_key . " = " . $order_dict[$key][$meta_key] . "\n");
-        if($meta_key == 'child_from_red') {
-          $data = $order_dict[$key][$meta_key];
-          $data = implode("|", explode(", ", $data));
-        } else {
-          $data = $order_dict[$key][$meta_key];
-        }
-        fwrite($fh, $data . ",");
+    foreach($fields as &$field) {
+      $data = $order_dict[$key][$field];
+      if($field == 'child_from_red') {
+        $data = implode("|", explode(", ", $data));
       }
+      fwrite($fh, $data . ",");
     }
     fwrite($fh, "\n");
   }
