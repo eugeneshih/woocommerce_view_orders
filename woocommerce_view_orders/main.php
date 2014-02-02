@@ -25,6 +25,7 @@ foreach ($classnames as &$class) {
     generate_csv($order_dict, $class);
     generate_md($order_dict, $class);
     generate_attendance($order_dict, $class);
+    generate_attendance_csv($order_dict, $class);
   }
 }
 
