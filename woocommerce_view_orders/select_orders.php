@@ -194,6 +194,37 @@ function generate_md($order_dict, $class) {
 }
 
 define("TOTAL_CLASSES", 15);
+function generate_attendance_csv($order_dict, $class) {
+  $fields = array("student_first_name", "student_last_name");
+  for($i = 1; $i <= TOTAL_CLASSES; $i++) {
+    $fields[] = "class " . $i;
+  }
+
+  $fname = implode("_", explode(" ", $class)) . "-attendance.csv";
+  $fh = fopen($fname, "w");
+
+  // write headers
+  $headings = array();
+  foreach($fields as &$heading) {
+    $headings[] = ucwords(implode(" ", explode("_", $heading)));
+  }
+  fwrite($fh, implode(",", $headings));
+  fwrite($fh, "\n");
+
+  // write students
+  $orderIds = array_keys($order_dict);
+  foreach($orderIds as &$key) {
+    $student_data = array();
+    foreach($fields as &$meta_key) {
+      $data = ucwords(strtolower($order_dict[$key][$meta_key]));
+      $student_data[] = $data;
+    }
+    fwrite($fh, implode(",", $student_data));
+    fwrite($fh, "\n");
+  }
+  fclose($fh);
+}
+
 function generate_attendance($order_dict, $class) {
   $fields = array("student_first_name", "student_last_name");
   for($i = 1; $i <= TOTAL_CLASSES; $i++) {
@@ -238,8 +269,7 @@ function generate_csv($order_dict, $class) {
   $fh = fopen($fname, "w");
   
   // write headers
-  fwrite($fh, "guardian first name, guardian last name, guardian phone, guardian e-mail, " . 
-         "student first name, student last name, teacher, grade, RED\n");
+  fwrite($fh, "student first name, student last name, grade, teacher, guardian first name, guardian last name, guardian phone, guardian e-mail, RED\n");
 
   // select the order from the selected orders
   $orderIds = array_keys($order_dict);
