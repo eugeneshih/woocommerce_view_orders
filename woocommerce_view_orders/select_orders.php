@@ -262,14 +262,14 @@ function generate_attendance($order_dict, $class) {
 
 function generate_csv($order_dict, $class) {
   $fields = array("student_first_name", "student_last_name", "grade", "teacher",
-                  "_billing_first_name", "_billing_last_name", "_billing_contactphone", "_billing_email", 
-                  "child_from_red");
+                  "emergency_contact", "emergency_phone", "_billing_email", 
+                  "doctor_contact", "doctor_phone", "child_from_red");
 
   $fname = implode("_", explode(" ", $class)) . ".csv";
   $fh = fopen($fname, "w");
   
   // write headers
-  fwrite($fh, "student first name, student last name, grade, teacher, guardian first name, guardian last name, guardian phone, guardian e-mail, RED\n");
+  fwrite($fh, "student first name, student last name, grade, teacher, emergency contact, emergency phone, guardian email, doctor contact, doctor phone, RED\n");
 
   // select the order from the selected orders
   $orderIds = array_keys($order_dict);

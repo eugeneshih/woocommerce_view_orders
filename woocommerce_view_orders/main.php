@@ -18,7 +18,7 @@ foreach ($classnames as &$class) {
   $orderIds = $selectOrders->getOrderIds($input, $start_date, $end_date);
   $allOrderIds = array_merge($allOrderIds, $orderIds);
   echo $class . ": number of students = " . count($orderIds) . "\n";
-
+  
   // if there are more than 0 total orders for this class, go through and print out the class list 
   if(count($orderIds) > 0) {
     $order_dict = $selectOrders->getOrderMetaData($orderIds);
@@ -29,10 +29,14 @@ foreach ($classnames as &$class) {
   }
 }
 
-/* $allEmails = array_unique($selectOrders->getOrderEmails($allOrderIds)); */
-/* foreach($allEmails as &$email) { */
-/*   echo $email . ","; */
-/* } */
-
+// generate all emails
+$fname = "emails.csv";
+$fh = fopen($fname, "w");
+$allEmails = array_unique($selectOrders->getOrderEmails($allOrderIds));
+echo "number unique emails = " . count($allEmails);
+foreach($allEmails as &$email) {
+  fwrite($fh, $email . ",");
+}
+fclose($fh)
 
 ?>
