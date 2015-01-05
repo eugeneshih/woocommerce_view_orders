@@ -65,24 +65,20 @@ class SelectOrders
     // classes that paid
     // look at the terms and term_relationships tables to determine paid status
     $res = $this->mysqli->query("SELECT DISTINCT id " .
-                                "FROM wp_ue7xmr_posts JOIN wp_ue7xmr_postmeta " .
-                                "ON id = post_id " .
-                                "JOIN wp_ue7xmr_woocommerce_order_items " .
-                                "ON id = order_id " .
+                                "FROM wp_ue7xmr_posts " .
+                                "JOIN wp_ue7xmr_postmeta ON id = post_id " .
+                                "JOIN wp_ue7xmr_woocommerce_order_items ON id = order_id " .
                                 "JOIN wp_ue7xmr_woocommerce_order_itemmeta " .
                                 "ON wp_ue7xmr_woocommerce_order_items.order_item_id = " .
-                                "  wp_ue7xmr_woocommerce_order_itemmeta.order_item_id " .
-                                "JOIN wp_ue7xmr_term_relationships " .
-                                "ON id = object_id " .
-                                "JOIN wp_ue7xmr_terms " .
-                                "ON term_id = term_taxonomy_id " .
-                                "WHERE post_type='shop_order' and " .
-                                "post_date > date(\"" . $beginDate . "\") and " .
-                                "post_date < date(\"" . $endDate   . "\") and " .
-                                " order_item_name = '" . $classname . "' and " .
-                                " (slug='processing' or slug='completed') and " .
-                                " wp_ue7xmr_woocommerce_order_itemmeta.meta_key='_qty' and " .
-                                " wp_ue7xmr_woocommerce_order_itemmeta.meta_value > 0");
+                                "   wp_ue7xmr_woocommerce_order_itemmeta.order_item_id " .
+                                "WHERE post_type='shop_order' " .
+                                "AND post_date > date('" . $beginDate . "') " .
+                                "AND post_date < date('" . $endDate   . "') " .
+                                "AND order_item_name = '" . $classname . "' " .
+                                "AND (post_status='wc-processing' OR post_status='wc-completed') " .
+                                "AND wp_ue7xmr_woocommerce_order_itemmeta.meta_key='_qty'" .
+                                "AND wp_ue7xmr_woocommerce_order_itemmeta.meta_value > 0");
+
     $shop_order_ids = array();
     $res->data_seek(0);
     while($row = $res->fetch_assoc()) {
