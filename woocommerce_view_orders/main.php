@@ -3,8 +3,8 @@
 include 'select_orders.php';
 include 'constants.php';
 
-$start_date = "2014-01-01";
-$end_date = "2014-01-30";
+$start_date = START_DATE;
+$end_date = END_DATE;
 
 $selectOrders = new SelectOrders(DATABASE_HOST, DATABASE_USER, DATABASE_PWD, DATABASE_DEFAULT_DB);
 
@@ -17,10 +17,10 @@ foreach ($classnames as &$class) {
   $input = str_replace('&', '&#038;', $class);
   $orderIds = $selectOrders->getOrderIds($input, $start_date, $end_date);
   $allOrderIds = array_merge($allOrderIds, $orderIds);
-  echo $class . ": number of students = " . count($orderIds) . "\n";
   
   // if there are more than 0 total orders for this class, go through and print out the class list 
   if(count($orderIds) > 0) {
+    echo $class . ": number of students = " . count($orderIds) . "\n";
     $order_dict = $selectOrders->getOrderMetaData($orderIds);
     generate_csv($order_dict, $class);
     generate_md($order_dict, $class);
